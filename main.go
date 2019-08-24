@@ -1,33 +1,29 @@
 package main
 
 import (
-
-	//"encoding/json"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/berni69/go-archetype/consul"
 	"github.com/berni69/go-archetype/utils"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 )
 
 func helloWorld(resp http.ResponseWriter, req *http.Request) {
 
-	fmt.Println("Hello world")
+	log.Debug("Hello world")
 	resp.Write([]byte("Hello world"))
-	//var generic map[string]interface{}
 	var generic []interface{}
 	var err = utils.GetJson("https://api.github.com/users/hadley/orgs", &generic)
 	if err != nil {
-		fmt.Println(err)
+		log.Debug(err)
 		return
 	}
 	j, err := json.Marshal(generic)
 	if err != nil {
-		fmt.Println(err)
+		log.Debug(err)
 		return
 	}
 	resp.Write(j)
@@ -35,19 +31,23 @@ func helloWorld(resp http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	fmt.Println("Starting Server")
-
+	log.Info("Starting Server")
+	var config configuration
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+	utils.InitLogger()
 
 	addressPort := utils.GetEnv("ADDRESS_PORT", ":8000")
 	router := mux.NewRouter()
 	router.HandleFunc("/hello", helloWorld).Methods("GET")
 
+	log.Debug(consul.LookupService("airport"))
+	err = consul.LoadConsulConfig(utils.GetEnv("CONSUL_KV", ""), &config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	log.Fatal(http.ListenAndServe(addressPort, router))
-
-	consul.Create_tls_config("", "", "")
-
 }
