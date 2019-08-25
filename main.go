@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/berni69/go-archetype/consul"
+	"github.com/berni69/go-archetype/vault"
+
 	"github.com/berni69/go-archetype/utils"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -29,9 +31,20 @@ func discoverAirport(resp http.ResponseWriter, req *http.Request) {
 
 func getConfig() {
 
-	err := consul.LoadConsulConfig(utils.GetEnv("CONSUL_KV", ""), &Configuration)
-	if err != nil {
-		log.Fatal(err)
+	consulKv := utils.GetEnv("CONSUL_KV", "")
+	if consulKv != "" {
+		err := consul.LoadConsulConfig(consulKv, &Configuration)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	vaultKv := utils.GetEnv("VAULT_KV", "")
+	if vaultKv != "" {
+		err := vault.LoadVaultConfig(vaultKv, &Secrets)
+		if err != nil {
+			log.Fatal(err)
+
+		}
 	}
 }
 
@@ -39,8 +52,9 @@ func main() {
 	log.Info("Starting Server")
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Warning("Error loading .env file")
 	}
+
 	// Logging options
 	utils.InitLogger()
 	/** Loading Config **/
@@ -48,6 +62,9 @@ func main() {
 	getConfig()
 	c.AddFunc("0 * * * * *", func() { getConfig() }) //Retrieve the config every minut
 	c.Start()
+
+	// Connection Pool
+	CreatePool()
 
 	/* Starting new Router */
 	router := mux.NewRouter()
