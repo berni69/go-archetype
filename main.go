@@ -4,11 +4,12 @@ import (
 	"net/http"
 
 	"github.com/berni69/go-archetype/consul"
+	"github.com/berni69/go-archetype/utils"
 	"github.com/berni69/go-archetype/vault"
 
-	"github.com/berni69/go-archetype/utils"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/lib/pq"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 )
@@ -17,6 +18,34 @@ func helloWorld(resp http.ResponseWriter, req *http.Request) {
 
 	log.Debug("Hello world")
 	resp.Write([]byte("Hello world"))
+}
+
+func records(resp http.ResponseWriter, req *http.Request) {
+
+	log.Debug("Records")
+	rows, err := DBPool.Query(`SELECT id, data2 FROM test`)
+
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if err, ok := err.(*pq.Error); ok {
+		log.Error("pq error:", err.Code.Name())
+		return
+	}
+	if rows == nil {
+		resp.Write([]byte("Empty rows"))
+		return
+	}
+	log.Debug(rows)
+	js, err := utils.Jsonify(rows)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	resp.Header().Set("Content-Type", "application/json")
+
+	resp.Write(js)
 }
 
 func discoverAirport(resp http.ResponseWriter, req *http.Request) {
@@ -70,6 +99,8 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/hello", helloWorld).Methods("GET")
 	router.HandleFunc("/discover", discoverAirport).Methods("GET")
+	router.HandleFunc("/records", records).Methods("GET")
+
 	addressPort := utils.GetEnv("ADDRESS_PORT", ":8000")
 	log.Fatal(http.ListenAndServe(addressPort, router))
 
