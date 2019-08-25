@@ -1,3 +1,4 @@
+// Package vault allows a user interact with vault (retrieving stored secrets)
 package vault
 
 import (
@@ -8,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// LoadVaultConfig Given a relative path to vault secret, this function will download
+// the the secrets from vault and it will fill the structure vaultConfig.
 func LoadVaultConfig(path string, vaultConfig interface{}) error {
 	log.Info("_______________________________________________________________________________________________________________________")
 	log.Infof("Vault Properties ================<< %s/v1/kv/%s >>======================================================",

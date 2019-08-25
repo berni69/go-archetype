@@ -1,3 +1,4 @@
+// Package consul allows a user interact with consul (looking up a service and retrieving stored configs)
 package consul
 
 import (
@@ -10,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// LookupService connects to consul in order to get a valid endpoint for connecting to a service.
 func LookupService(serviceName string) (string, error) {
 	config := consulapi.DefaultConfig()
 	co, err := consulapi.NewClient(config)
@@ -29,6 +31,8 @@ func LookupService(serviceName string) (string, error) {
 	return fmt.Sprintf("http://%s:%v", address, port), nil
 }
 
+// LoadConsulConfig Given a relative path to consul kv service file (.yaml), this function will download
+// the config. The structure consulConfig will be filled with the retrieved config.
 func LoadConsulConfig(path string, consulConfig interface{}) error {
 	log.Info("_______________________________________________________________________________________________________________________")
 	log.Infof("Consul Properties ================<< %s/v1/kv/%s >>======================================================",
@@ -46,9 +50,6 @@ func LoadConsulConfig(path string, consulConfig interface{}) error {
 		log.Debug(err)
 		return err
 	}
-
-	log.Debug(path)
-	log.Debug(string(pair.Value))
 
 	err = yaml.Unmarshal(pair.Value, consulConfig)
 	if err != nil {
