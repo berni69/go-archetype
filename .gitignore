@@ -2,3 +2,4 @@
 *.exe
 *.exe~
 .env.local
+go-archetype
