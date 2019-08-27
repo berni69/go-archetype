@@ -1,15 +1,18 @@
 package main
 
 import (
-	"database/sql"
+	sql2 "database/sql"
 	"fmt"
 
-	_ "github.com/lib/pq"
+	sql "go.elastic.co/apm/module/apmsql"
+
+	//_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
+	_ "go.elastic.co/apm/module/apmsql/pq"
 )
 
 // DBPool Global object, it's a connection pool usable after call CreatePool
-var DBPool *sql.DB
+var DBPool *sql2.DB
 
 // MAX_IDLE_CONNEXIONS constant:  maximum number of idle connections at same time
 const MAX_IDLE_CONNEXIONS = 2
@@ -25,6 +28,7 @@ func CreatePool() {
 		Configuration.Database.User, Secrets.DatabasePassword,
 		Configuration.Database.Host, Configuration.Database.Port,
 		Configuration.Database.Name)
+
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)

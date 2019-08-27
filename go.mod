@@ -10,5 +10,8 @@ require (
 	github.com/lib/pq v1.2.0
 	github.com/robfig/cron v1.2.0
 	github.com/sirupsen/logrus v1.4.2
+	go.elastic.co/apm v1.5.0
+	go.elastic.co/apm/module/apmgorilla v1.5.0
+	go.elastic.co/apm/module/apmsql v1.5.0
 	gopkg.in/yaml.v2 v2.2.2
 )

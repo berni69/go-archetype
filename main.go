@@ -12,6 +12,9 @@ import (
 	"github.com/lib/pq"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
+	"go.elastic.co/apm"
+	"go.elastic.co/apm/module/apmgorilla"
+	"go.elastic.co/apm/transport"
 )
 
 func helloWorld(resp http.ResponseWriter, req *http.Request) {
@@ -23,7 +26,7 @@ func helloWorld(resp http.ResponseWriter, req *http.Request) {
 func records(resp http.ResponseWriter, req *http.Request) {
 
 	log.Debug("Records")
-	rows, err := DBPool.Query(`SELECT id, data2 FROM test`)
+	rows, err := DBPool.QueryContext(req.Context(), `SELECT id, data2 FROM test`)
 
 	if err != nil {
 		log.Error(err)
@@ -37,7 +40,6 @@ func records(resp http.ResponseWriter, req *http.Request) {
 		resp.Write([]byte("Empty rows"))
 		return
 	}
-	log.Debug(rows)
 	js, err := utils.Jsonify(rows)
 	if err != nil {
 		log.Error(err)
@@ -77,8 +79,8 @@ func getConfig() {
 	}
 }
 
-func main() {
-	log.Info("Starting Server")
+func init() {
+
 	err := godotenv.Load()
 	if err != nil {
 		log.Warning("Error loading .env file")
@@ -86,17 +88,31 @@ func main() {
 
 	// Logging options
 	utils.InitLogger()
+
 	/** Loading Config **/
 	c := cron.New()
 	getConfig()
 	c.AddFunc("0 * * * * *", func() { getConfig() }) //Retrieve the config every minut
 	c.Start()
 
+	//APM Init
+	transport.InitDefault()
+
 	// Connection Pool
 	CreatePool()
 
+}
+
+func main() {
+	log.Info("Starting Server")
+
 	/* Starting new Router */
 	router := mux.NewRouter()
+	tracer, err := apm.NewTracer("", "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	apmgorilla.Instrument(router, apmgorilla.WithTracer(tracer))
 	router.HandleFunc("/hello", helloWorld).Methods("GET")
 	router.HandleFunc("/discover", discoverAirport).Methods("GET")
 	router.HandleFunc("/records", records).Methods("GET")
